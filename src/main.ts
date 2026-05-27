@@ -1,0 +1,244 @@
+const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
+const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+const physics = {
+  gravity: 9.8 * 100,
+  friction: 10,
+};
+
+class Vector2D {
+  x: number;
+  y: number;
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+
+  add(v: Vector2D) {
+    this.x += v.x;
+    this.y += v.y;
+
+    return this;
+  }
+
+  subtract(v: Vector2D) {
+    this.x -= v.x;
+    this.y -= v.y;
+
+    return this;
+  }
+
+  multiply(scalar: number) {
+    this.x *= scalar;
+    this.y *= scalar;
+
+    return this;
+  }
+
+  clone() {
+    return new Vector2D(this.x, this.y);
+  }
+
+  divide(scalar: number) {
+    if (scalar === 0) return this;
+
+    this.x /= scalar;
+    this.y /= scalar;
+
+    return this;
+  }
+
+  distance(v: Vector2D = new Vector2D(0, 0)): number {
+    // return Math.sqrt(this.x * this.x + this.y * this.y);
+
+    return Math.sqrt(
+      (this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y),
+    );
+  }
+
+  magnitude() {
+    return Math.sqrt(this.x * this.x + this.y * this.y);
+  }
+
+  normalize() {
+    const mag = this.magnitude();
+
+    if (mag === 0) {
+      return new Vector2D(0, 0);
+    }
+
+    return this.clone().divide(mag);
+  }
+  dot(v: Vector2D): number {
+    return this.x * v.x + this.y * v.y;
+  }
+}
+
+class Ball {
+  position: Vector2D;
+  velocity: Vector2D;
+  acc: Vector2D;
+  radius: number;
+  bounciness: number;
+  colliding: boolean = false;
+  constructor(
+    position: Vector2D,
+    velocity: Vector2D,
+    acc: Vector2D,
+    radius: number,
+    bounciness: number,
+  ) {
+    this.position = position;
+    this.velocity = velocity;
+    this.acc = acc;
+    this.radius = radius;
+    this.bounciness = bounciness;
+  }
+
+  isGrounded() {
+    return this.position.y >= canvas.height - this.radius;
+  }
+}
+
+const balls: Ball[] = [];
+
+for (let i = 0; i < 10; i++) {
+  balls.push(
+    new Ball(
+      new Vector2D(Math.random() * canvas.width, Math.random() * canvas.height),
+      new Vector2D(Math.random() * 200, 0),
+      new Vector2D(0, physics.gravity),
+      40,
+      0.8,
+    ),
+  );
+}
+
+function updatePhysics(ball: Ball, dt: number) {
+  ball.velocity.add(ball.acc.clone().multiply(dt));
+  ball.position.add(ball.velocity.clone().multiply(dt));
+
+  const frictionAmount = physics.friction * dt;
+
+  if (ball.isGrounded()) {
+    if (Math.abs(ball.velocity.x) > frictionAmount) {
+      ball.velocity.x -= frictionAmount * Math.sign(ball.velocity.x);
+    } else {
+      ball.velocity.x = 0;
+    }
+  }
+}
+
+function wallCollisions(ball: Ball) {
+  // ceiling check
+  if (ball.position.y < ball.radius) {
+    ball.position.y = ball.radius;
+    ball.velocity.y *= -ball.bounciness;
+  }
+  // floor check
+  if (ball.position.y > canvas.height - ball.radius) {
+    ball.position.y = canvas.height - ball.radius;
+
+    ball.velocity.y *= -ball.bounciness;
+
+    // sleep threshold
+    if (Math.abs(ball.velocity.y) < 0.1) {
+      ball.velocity.y = 0;
+    }
+  }
+  // left wall check
+  if (ball.position.x < ball.radius) {
+    ball.position.x = ball.radius;
+    ball.velocity.x *= -ball.bounciness;
+  }
+  // right wall check
+  if (ball.position.x > canvas.width - ball.radius) {
+    ball.position.x = canvas.width - ball.radius;
+    ball.velocity.x *= -ball.bounciness;
+  }
+}
+
+function ballCollisions() {
+  for (const ball of balls) {
+    ball.colliding = false;
+  }
+
+  for (let i = 0; i < balls.length; i++) {
+    const ball1 = balls[i];
+    for (let j = i + 1; j < balls.length; j++) {
+      const ball2 = balls[j];
+
+      let difference = ball1.position.clone().subtract(ball2.position);
+
+      let distance = difference.magnitude();
+
+      let totalRadius = ball1.radius + ball2.radius;
+
+      if (distance < totalRadius) {
+        ball1.colliding = true;
+        ball2.colliding = true;
+
+        let overlap = totalRadius - distance;
+
+        let collisionNormal = difference.clone().normalize();
+
+        let separationVector = collisionNormal.clone().multiply(overlap / 2);
+
+        ball1.position.add(separationVector);
+        ball2.position.subtract(separationVector);
+
+        const relativeVelocity = ball1.velocity
+          .clone()
+          .subtract(ball2.velocity);
+
+        const velocityAlongNormal = relativeVelocity.dot(collisionNormal);
+
+        if (velocityAlongNormal > 0) {
+          continue;
+        }
+
+        const restitution = Math.min(ball1.bounciness, ball2.bounciness);
+
+        const impulseStrength = (-(1 + restitution) * velocityAlongNormal) / 2;
+
+        const impulse = collisionNormal.clone().multiply(impulseStrength);
+
+        ball1.velocity.add(impulse);
+        ball2.velocity.subtract(impulse);
+      }
+    }
+  }
+}
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const ball of balls) {
+    ctx.beginPath();
+    ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI);
+    ctx.fillStyle = ball.colliding ? "red" : "blue";
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+let previousTimestamp = 0;
+
+function loop(timestamp: number) {
+  if (previousTimestamp === 0) {
+    previousTimestamp = timestamp;
+    requestAnimationFrame(loop);
+    return;
+  }
+  const dt = (timestamp - previousTimestamp) / 1000;
+  previousTimestamp = timestamp;
+
+  for (const ball of balls) {
+    updatePhysics(ball, dt);
+    wallCollisions(ball);
+  }
+  ballCollisions();
+  render();
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
