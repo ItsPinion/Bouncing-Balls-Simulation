@@ -33,9 +33,12 @@ bouncinessInput.addEventListener("input", () => {
   defaultBallConfig.bounciness = bn;
   for (const b of balls) b.bounciness = bn;
 });
+
 radiusInput.addEventListener("input", () => {
-  const r = parseFloat(radiusInput.value);
+  let r = parseFloat(radiusInput.value) || 2;
+  r = r > 1 ? r : 2;
   defaultBallConfig.radius = r;
+  console.log("Updated radius:", r);
   for (const b of balls) b.radius = r;
 });
 gravityInput.addEventListener("input", () => {
@@ -43,11 +46,11 @@ gravityInput.addEventListener("input", () => {
 });
 
 speedInput.addEventListener("input", () => {
-  physics.speed = parseFloat(speedInput.value);
+  physics.speed = parseFloat(speedInput.value) || 0;
 });
 
 countInput.addEventListener("input", () => {
-  const newCount = parseInt(countInput.value, 10);
+  const newCount = parseInt(countInput.value, 10) || 0;
   if (newCount !== balls.length) {
     defaultBallConfig.count = newCount;
     initBalls(newCount);
