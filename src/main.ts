@@ -3,20 +3,17 @@ import "./style.css";
 const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-const physics = {
+export const physics = {
   gravity: 9.8 * 100,
-  friction: 10,
   speed: 1,
 };
 
-const defaultBallConfig = {
+export const defaultBallConfig = {
   radius: 5,
   bounciness: 0.9,
   count: 1000,
   collisionColor: "red",
   defaultColor: "blue",
-  maxVelocity: 2000,
-  minVelocity: -2000,
 };
 
 class Vector2D {
@@ -129,38 +126,33 @@ class Ball {
   }
 }
 
-const balls: Ball[] = [];
+export const balls: Ball[] = [];
 
-for (let i = 0; i < defaultBallConfig.count; i++) {
-  balls.push(
-    new Ball(
-      new Vector2D(Math.random() * canvas.width, Math.random() * canvas.height),
-      new Vector2D(
-        Math.random() *
-          (defaultBallConfig.maxVelocity - defaultBallConfig.minVelocity) +
-          defaultBallConfig.minVelocity,
-        0,
+export function initBalls(count: number) {
+  balls.length = 0;
+  for (let i = 0; i < count; i++) {
+    balls.push(
+      new Ball(
+        new Vector2D(
+          Math.random() * canvas.width,
+          Math.random() * canvas.height,
+        ),
+        new Vector2D(Math.random() * (2000 * 2) - 2000, 0),
+        new Vector2D(0, physics.gravity),
+        defaultBallConfig.radius,
+        defaultBallConfig.bounciness,
       ),
-      new Vector2D(0, physics.gravity),
-      defaultBallConfig.radius,
-      defaultBallConfig.bounciness,
-    ),
-  );
+    );
+  }
 }
 
+// initial population
+initBalls(defaultBallConfig.count);
+
 function updatePhysics(ball: Ball, dt: number) {
+  ball.acc = new Vector2D(0, physics.gravity);
   ball.velocity.add(ball.acc.clone().multiply(dt));
   ball.position.add(ball.velocity.clone().multiply(dt));
-
-  const frictionAmount = physics.friction * dt;
-
-  if (ball.isGrounded(canvas)) {
-    if (Math.abs(ball.velocity.x) > frictionAmount) {
-      ball.velocity.x -= frictionAmount * Math.sign(ball.velocity.x);
-    } else {
-      ball.velocity.x = 0;
-    }
-  }
 }
 
 function resolveWallCollisions(ball: Ball) {
