@@ -1,9 +1,22 @@
+import "./style.css";
+
 const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const physics = {
   gravity: 9.8 * 100,
   friction: 10,
+  speed: 1,
+};
+
+const defaultBallConfig = {
+  radius: 5,
+  bounciness: 0.9,
+  count: 1000,
+  collisionColor: "red",
+  defaultColor: "blue",
+  maxVelocity: 2000,
+  minVelocity: -2000,
 };
 
 class Vector2D {
@@ -48,7 +61,7 @@ class Vector2D {
     return this;
   }
 
-  distance(v: Vector2D = new Vector2D(0, 0)): number {
+  distance(v: Vector2D): number {
     // return Math.sqrt(this.x * this.x + this.y * this.y);
 
     return Math.sqrt(
@@ -60,11 +73,14 @@ class Vector2D {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }
 
+  static zero() {
+    return new Vector2D(0, 0);
+  }
   normalize() {
     const mag = this.magnitude();
 
     if (mag === 0) {
-      return new Vector2D(0, 0);
+      return Vector2D.zero();
     }
 
     return this.clone().divide(mag);
@@ -95,21 +111,39 @@ class Ball {
     this.bounciness = bounciness;
   }
 
-  isGrounded() {
-    return this.position.y >= canvas.height - this.radius;
+  isGrounded(canvas: HTMLCanvasElement) {
+    const floorY = canvas.height;
+    return this.position.y >= floorY - this.radius;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, this.radius, 0, 2 * Math.PI);
+
+    ctx.fillStyle = this.colliding
+      ? defaultBallConfig.collisionColor
+      : defaultBallConfig.defaultColor;
+
+    ctx.fill();
+    ctx.stroke();
   }
 }
 
 const balls: Ball[] = [];
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < defaultBallConfig.count; i++) {
   balls.push(
     new Ball(
       new Vector2D(Math.random() * canvas.width, Math.random() * canvas.height),
-      new Vector2D(Math.random() * 200, 0),
+      new Vector2D(
+        Math.random() *
+          (defaultBallConfig.maxVelocity - defaultBallConfig.minVelocity) +
+          defaultBallConfig.minVelocity,
+        0,
+      ),
       new Vector2D(0, physics.gravity),
-      40,
-      0.8,
+      defaultBallConfig.radius,
+      defaultBallConfig.bounciness,
     ),
   );
 }
@@ -120,7 +154,7 @@ function updatePhysics(ball: Ball, dt: number) {
 
   const frictionAmount = physics.friction * dt;
 
-  if (ball.isGrounded()) {
+  if (ball.isGrounded(canvas)) {
     if (Math.abs(ball.velocity.x) > frictionAmount) {
       ball.velocity.x -= frictionAmount * Math.sign(ball.velocity.x);
     } else {
@@ -129,7 +163,7 @@ function updatePhysics(ball: Ball, dt: number) {
   }
 }
 
-function wallCollisions(ball: Ball) {
+function resolveWallCollisions(ball: Ball) {
   // ceiling check
   if (ball.position.y < ball.radius) {
     ball.position.y = ball.radius;
@@ -158,7 +192,7 @@ function wallCollisions(ball: Ball) {
   }
 }
 
-function ballCollisions() {
+function resolveBallCollisions() {
   for (const ball of balls) {
     ball.colliding = false;
   }
@@ -171,7 +205,9 @@ function ballCollisions() {
       let difference = ball1.position.clone().subtract(ball2.position);
 
       let distance = difference.magnitude();
-
+      if (distance === 0) {
+        distance = 0.0001;
+      }
       let totalRadius = ball1.radius + ball2.radius;
 
       if (distance < totalRadius) {
@@ -212,11 +248,7 @@ function ballCollisions() {
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (const ball of balls) {
-    ctx.beginPath();
-    ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI);
-    ctx.fillStyle = ball.colliding ? "red" : "blue";
-    ctx.fill();
-    ctx.stroke();
+    ball.draw(ctx);
   }
 }
 
@@ -228,14 +260,23 @@ function loop(timestamp: number) {
     requestAnimationFrame(loop);
     return;
   }
-  const dt = (timestamp - previousTimestamp) / 1000;
+  const dt = ((timestamp - previousTimestamp) / 1000) * physics.speed;
   previousTimestamp = timestamp;
 
+  // physics
   for (const ball of balls) {
     updatePhysics(ball, dt);
-    wallCollisions(ball);
   }
-  ballCollisions();
+
+  // world collisions
+  for (const ball of balls) {
+    resolveWallCollisions(ball);
+  }
+
+  // ball collisions
+  resolveBallCollisions();
+
+  // rendering
   render();
 
   requestAnimationFrame(loop);

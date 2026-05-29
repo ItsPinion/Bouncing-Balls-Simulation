@@ -10,7 +10,31 @@
 
 <body>
   <div id="app" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
-    <canvas id="myCanvas" width="1000" height="700" style="border:1px solid black;"></canvas>
+    <div style="display: flex; gap: 16px; align-items: flex-start;">
+      <div>
+        <canvas id="myCanvas" width="1000" height="700" style="border:1px solid black;"></canvas>
+      </div>
+      <div id="controls"
+        style="width:260px; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fafafa; font-family: Arial, Helvetica, sans-serif;">
+        <h3 style="margin:0 0 8px 0; font-size:16px;">Simulation Controls</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label>Gravity: <input id="gravityInput" type="number" step="0.1" value="980" style="width:120px;"></label>
+          <label>Friction: <input id="frictionInput" type="number" step="0.1" value="10" style="width:120px;"></label>
+          <label>Speed: <input id="speedInput" type="number" step="0.1" value="1" style="width:120px;"></label>
+          <label>Radius: <input id="radiusInput" type="number" step="1" value="5" style="width:120px;"></label>
+          <label>Bounciness: <input id="bouncinessInput" type="range" min="0" max="1" step="0.01" value="0.9"
+              style="width:160px;"></label>
+          <label>Count: <input id="countInput" type="number" step="1" min="0" value="1000" style="width:120px;"></label>
+          <label>Max Velocity: <input id="maxVelocityInput" type="number" step="1" value="2000"
+              style="width:120px;"></label>
+          <label>Min Velocity: <input id="minVelocityInput" type="number" step="1" value="-2000"
+              style="width:120px;"></label>
+          <label>Default Color: <input id="defaultColorInput" type="color" value="#0000ff"></label>
+          <label>Collision Color: <input id="collisionColorInput" type="color" value="#ff0000"></label>
+          <button id="applyBtn" style="padding:6px 8px; border-radius:4px;">Apply / Regenerate</button>
+        </div>
+      </div>
+    </div>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
