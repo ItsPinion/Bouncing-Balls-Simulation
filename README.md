@@ -265,7 +265,6 @@ Recommended experiments:
 * Increase ball count dramatically.
 * Set bounciness close to 1.
 * Slow down the simulation.
-* Compare high and low friction values.
 
 ---
 
