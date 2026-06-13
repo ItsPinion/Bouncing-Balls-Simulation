@@ -9,11 +9,12 @@ export const physics = {
 };
 
 export const defaultBallConfig = {
-  radius: 5,
+  radius: 10,
   bounciness: 0.9,
-  count: 1000,
+  count: 50,
   collisionColor: "red",
   defaultColor: "blue",
+  motionBlur: true,
 };
 
 class Vector2D {
@@ -238,7 +239,13 @@ function resolveBallCollisions() {
   }
 }
 function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (defaultBallConfig.motionBlur) {
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#16171d2c";
+    ctx.fill();
+  } else {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
   for (const ball of balls) {
     ball.draw(ctx);
   }

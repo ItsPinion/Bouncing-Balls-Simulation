@@ -21,6 +21,10 @@ const accelerateButton = document.getElementById(
   "accelerateButton",
 ) as HTMLButtonElement;
 
+const motionBlurInput = document.getElementById(
+  "motionBlurInput",
+) as HTMLInputElement;
+
 // live listeners for small updates
 defaultColorInput.addEventListener("input", () => {
   defaultBallConfig.defaultColor = defaultColorInput.value;
@@ -32,6 +36,10 @@ bouncinessInput.addEventListener("input", () => {
   const bn = parseFloat(bouncinessInput.value);
   defaultBallConfig.bounciness = bn;
   for (const b of balls) b.bounciness = bn;
+});
+
+motionBlurInput.addEventListener("change", () => {
+  defaultBallConfig.motionBlur = motionBlurInput.checked;
 });
 
 radiusInput.addEventListener("input", () => {
